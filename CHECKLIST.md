@@ -35,4 +35,9 @@ Date: 5 November 2026
 
 ## 4. SonarQube for IDE warnings I saw in app.js
 
-# This Framework implicitly discloses version information by defult. Make sure it is safe here
+- Issue: The `/user` route accepted untrusted query input directly in the SQL query, allowing injection payloads such as `name=x' OR '1'='1`.
+  - Solution: Validate the `name` value before using it and use a parameterized query so the input is treated as data, not executable SQL.
+  - Result: The app now rejects unsafe input and only returns matching records for valid names.
+
+- Issue: The app was exposing framework version details via the default `X-Powered-By` header.
+  - Solution: Disable the header with `app.disable('x-powered-by')` or use Helmet middleware.

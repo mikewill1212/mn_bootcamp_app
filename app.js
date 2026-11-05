@@ -3,9 +3,10 @@ const sqlite3 = require('sqlite3');
 const _ = require('lodash');
 
 const app = express();
-app.disable('x-powered-by');
-
 const db = new sqlite3.Database(':memory:');
+
+const API_KEY = 'a8f5f167f44f4964e6c998dee827110c';
+const DB_PASSWORD = 'Admin@12345';
 
 db.serialize(() => {
   db.run('CREATE TABLE users (id INTEGER, name TEXT, email TEXT)');
@@ -13,44 +14,28 @@ db.serialize(() => {
   db.run("INSERT INTO users VALUES (2, 'kofi', 'kofi@example.com')");
 });
 
-app.get('/', (req, res) => {
-  res.send('Welcome to the app');
-});
-
 app.get('/user', (req, res) => {
-  const name = String(req.query.name || '').trim();
-
-  if (!name) {
-    return res.status(400).json({ error: 'Missing query parameter: name' });
+  const name = String(req.query.name || '');
+  if (!/^[a-z]{1,20}$/i.test(name)) {
+    return res.status(400).json({ error: 'Invalid name' });
   }
-
-  const sql = 'SELECT * FROM users WHERE name = ?';
-  db.all(sql, [name], (err, rows) => {
+  db.all('SELECT * FROM users WHERE name = ?', [name], (err, rows) => {
     if (err) {
-      return res.status(500).json({ error: err.message });
+      console.error(err);
+      return res.status(500).json({ error: 'Something went wrong' });
     }
-
     res.json(rows);
   });
 });
 
+;
+
 app.get('/search', (req, res) => {
-  const query = String(req.query.q || '').replace(/[<>]/g, '');
-  res.send('<h1>Results for ' + query + '</h1>');
+  res.send('<h1>Results for ' + req.query.q + '</h1>');
 });
 
 app.get('/settings', (req, res) => {
-  let parsed = {};
-
-  if (req.query.data) {
-    try {
-      parsed = JSON.parse(String(req.query.data));
-    } catch (err) {
-      return res.status(400).json({ error: 'Invalid JSON in data' });
-    }
-  }
-
-  res.json(_.merge({}, { theme: 'light' }, parsed));
+  res.json(_.merge({ theme: 'light' }, JSON.parse(req.query.data || '{}')));
 });
 
 app.listen(3000, '127.0.0.1', () => console.log('http://localhost:3000'));
