@@ -1,8 +1,15 @@
 const express = require('express');
 const sqlite3 = require('sqlite3');
 const _ = require('lodash');
+const escapeHtml = require('escape-html');
 
 const app = express();
+
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  next();
+});
+
 const db = new sqlite3.Database(':memory:');
 
 const API_KEY = 'a8f5f167f44f4964e6c998dee827110c';
@@ -28,10 +35,12 @@ app.get('/user', (req, res) => {
   });
 });
 
-;
-
 app.get('/search', (req, res) => {
-  res.send('<h1>Results for ' + req.query.q + '</h1>');
+  const q = String(req.query.q || '');
+  if (q.length > 100) {
+    return res.status(400).send('Search text is too long');
+  }
+  res.send('<h1>Results for ' + escapeHtml(q) + '</h1>');
 });
 
 app.get('/settings', (req, res) => {
